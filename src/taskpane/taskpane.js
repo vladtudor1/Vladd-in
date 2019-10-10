@@ -3,6 +3,9 @@
  * See LICENSE in the project root for license information.
  */
 
+ var _doc;
+ var lastLookup; 
+
 Office.onReady(info => {
   if (info.host === Office.HostType.Word) {
     document.getElementById("sideload-msg").style.display = "none";
@@ -25,4 +28,41 @@ export async function run() {
 
     await context.sync();
   });
+}
+
+ // The initialize function must be run each time a new page is loaded
+ Office.initialize = function (reason) {
+  $(document).ready(function(){
+    _doc = Office.context.document;
+    tryUpdatingSelectedWord();
+    _doc.addHandlerAsync("documentSelectionChanged", tryUpdatingSelectedWord);
+  });
+};
+
+// Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, function (asyncResult) {
+//   if (asyncResult.status == Office.AsyncResultStatus.Failed) {
+//       write('Action failed. Error: ' + asyncResult.error.message);
+//   }
+//   else {
+//       write('Selected data: ' + asyncResult.value);
+//   }
+// });
+
+// // Function that writes to a div with id='message' on the page.
+// function write(message){
+//   document.getElementById('message').innerText += message; 
+// }
+
+function tryUpdatingSelectedWord() {
+  _doc.getSelectedDataAsync(Office.CoercionType.Text, selectedTextCallback); 
+}
+
+function selectedTextCallback(selectedText) {
+    selectedText = $.trim(selectedText.value);
+    if (selectedText != "") { 
+        if (selectedText != lastLookup) { 
+            lastLookup = selectedText; 
+            $("#headword").text(selectedText); 
+    }
+  }
 }
