@@ -39,20 +39,6 @@ export async function run() {
   });
 };
 
-// Office.context.document.getSelectedDataAsync(Office.CoercionType.Text, function (asyncResult) {
-//   if (asyncResult.status == Office.AsyncResultStatus.Failed) {
-//       write('Action failed. Error: ' + asyncResult.error.message);
-//   }
-//   else {
-//       write('Selected data: ' + asyncResult.value);
-//   }
-// });
-
-// // Function that writes to a div with id='message' on the page.
-// function write(message){
-//   document.getElementById('message').innerText += message; 
-// }
-
 function tryUpdatingSelectedWord() {
   _doc.getSelectedDataAsync(Office.CoercionType.Text, selectedTextCallback); 
 }
