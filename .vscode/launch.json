@@ -49,6 +49,13 @@
       "url": "${input:officeOnlineDocumentUrl}",
       "webRoot": "${workspaceFolder}",
       "preLaunchTask": "Debug: Web"
+    },
+    {
+      "name": "ng test",
+      "type": "chrome",
+      "request": "launch",
+      "url": "https://localhost:3000/taskpane.html",
+      "webRoot": "${workspaceFolder}"
     }
   ],
   "inputs": [
