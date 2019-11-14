@@ -5,22 +5,39 @@
 <html>
 
 <head>
+    <link rel="stylesheet" href="https://appsforoffice.microsoft.com/fabric/1.0/fabric.min.css"/>
+    <link rel="stylesheet" href="https://appsforoffice.microsoft.com/fabric/1.0/fabric.components.min.css"/>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Contoso Task Pane Add-in</title>
+
+    <!-- This is the openxmlsdk from ericwhite.com. -->
+    <script src="Scripts/openxmlsdkjs-01-01-02/linq.js"></script>
+    <script src="Scripts/openxmlsdkjs-01-01-02/ltxml.js"></script>
+    <script src="Scripts/openxmlsdkjs-01-01-02/ltxml-extensions.js"></script>
+    <script src="Scripts/openxmlsdkjs-01-01-02/jszip.js"></script>
+    <script src="Scripts/openxmlsdkjs-01-01-02/jszip-load.js"></script>
+    <script src="Scripts/openxmlsdkjs-01-01-02/jszip-inflate.js"></script>
+    <script src="Scripts/openxmlsdkjs-01-01-02/jszip-deflate.js"></script>
+    <script src="Scripts/openxmlsdkjs-01-01-02/openxml.js"></script>
 
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
 
     <!--Optional library includes.-->
-    <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.5.1.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 
     <!-- For more information on Office UI Fabric, visit https://developer.microsoft.com/fabric. -->
     <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/9.6.1/css/fabric.min.css"/>
 
     <!-- Template styles -->
     <link href="taskpane.css" rel="stylesheet" type="text/css" />
+
+    <!-- This is the extension to the Office.js library -->
+    <script src="Scripts/Word-extensions/Word-extensions.js" type="text/javascript"></script>
+    
+
 </head>
 
 <body class="ms-font-m ms-welcome ms-Fabric">
@@ -29,9 +46,7 @@
         <h1 class="ms-font-su">Vladd-in</h1>
     </header>
     <main id="app-body" class="ms-welcome__main" style="display: none;">
-        <div id='message'>
-
-        </div>
+        <div id='message'></div>
     </main>
     <div id="mainContainer" style="text-align: center"> 
         <div id="header">
@@ -40,12 +55,23 @@
             </p>    
         </div>
         <div>
-            <button id="'bookmarkSelection'">Bookmark the selection</button>
-            <p>Insert a reference to the bookmark:</p>
-            <button id="refBookmark">Ref the bookmark</button>
-            <p>Insert a comment at the selection</p>
-            <button id="insertContentControls">Just press me</button>
-
+            <button class="ms-Button ms-Button--primary" id="bookmark-button">
+                <span class="ms-Button-icon"><i class="ms-Icon ms-Icon--plus"></i></span>
+                <span class="ms-Button-label" id="button-text"></span>
+                <span class="ms-Button-description" id="button-desc"></span>
+            </button>
+            <!-- <p>Insert a comment at the selection</p>
+            <button class="ms-Button" id="insertContentControls">Insert comment</button>
+            <p>Create a header</p>
+            <button class="ms-Button" id="createHeading">Create heading</button>
+            <p></p> -->
+            <p>OOXML Stuff</p>
+            <div id="ooxmlContent">
+                <button class="ms-Button" id="getOOXML">Get Open XML</button>
+                <button class="ms-Button" id="setOOXML">Insert Open XML</button>             
+                <div id="status"></div>
+                <textarea class="ms-TextField-field" id="dataOOXML" style="width: 250px; height: 500px;" disabled="disabled"></textarea>
+            </div>
             <p style="margin-top: 50px;">
                 <a href="javascript:location.reload(true)">Refresh add-in</a>
             </p>
