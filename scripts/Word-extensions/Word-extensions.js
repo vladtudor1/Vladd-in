@@ -88,16 +88,13 @@ var officeWordExtension = (function () {
 
         Word.run(function (ctx) {
             // Queue a command to get the current selection and then create a proxy range object with the results.
-            var range = ctx.document.getSelection();
-
-            // Get our OOXML...
-            var ooxml = range.getOoxml();
-
+            var range = ctx.document.getSelection().paragraphs.getFirstOrNullObject()
             // sync with our document to conflate the ooxml...
+            var ooxml = range.getOoxml()
             return ctx.sync().then(function () {
                 // now we can use the ooxml var
-
                 // open the full OPC package we get in the openXml SDK
+                console.log('1')
                 var doc = new openXml.OpenXmlPackage(ooxml.value);
 
                 // Create the bookmarkStart/End elements.
@@ -107,7 +104,7 @@ var officeWordExtension = (function () {
                 var bookmarkStart = new XElement("w:bookmarkStart",
                     new XAttribute("w:id", bkmkId),
                     new XAttribute("w:name", bkmkName));
-
+                    console.log('2')
                 var bookmarkEnd = new XElement("w:bookmarkEnd",
                     new XAttribute("w:id", bkmkId));
 
@@ -121,7 +118,7 @@ var officeWordExtension = (function () {
                 // in mind in that you always get valid Opc (despite the name of the method).
 
                 // TODO: research if I should use .elements() instead of .descendantNodes()?
-
+                console.log('3')
                 // Find first paragraph and add the bookmarkStart - the selection is wrapped in a paragraph
                 var body = mainPartXDoc.root.element(W.body);
                 var functorPMatch = function (e) {
@@ -135,8 +132,10 @@ var officeWordExtension = (function () {
                     console.log("Word-extensions.js: This should never happen; we don't have a paragraph in the selection.")
                 }
                 else {
+                    console.log("else1")
                     // Insert the bookmark start here.
                     nodeFirstP.addFirst(bookmarkStart);
+
 
                     // Now locate the last paragraph, as there may be multiples, and insert our end after the end of it.
                     var nodeLastP = body.descendantNodes().last(functorPMatch);
@@ -144,11 +143,13 @@ var officeWordExtension = (function () {
                         // No paragraphs
                     }
                     else {
+                        console.log("else2")
                         // Now locate the last paragraph and insert our end after the end of it.
                         var count = nodeLastP.descendantNodes().count();
                         if (0 == count) {
                             nodeLastP.addFirst(bookmarkEnd);
                         } else {
+                            console.log("else3")
                             var node = nodeLastP.getLastNode();
 
                             // WORD BUG - Anchor Bookmarks - 

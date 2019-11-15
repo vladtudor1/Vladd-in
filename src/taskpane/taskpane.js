@@ -98,6 +98,7 @@
   // The initialize function must be run each time a new page is loaded.
   Office.initialize = function (reason) {
       $(document).ready(function () {
+        OfficeExtension.config.extendedErrorLogging = true;
         _doc = Office.context.document;
           tryUpdatingSelectedWord();
           _doc.addHandlerAsync("documentSelectionChanged", tryUpdatingSelectedWord);
