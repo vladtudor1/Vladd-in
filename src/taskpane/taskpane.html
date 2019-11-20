@@ -48,18 +48,16 @@
     <main id="app-body" class="ms-welcome__main" style="display: none;">
         <div id='message'></div>
     </main>
-    <div id="mainContainer" style="text-align: center"> 
+    <div id="app" style="text-align: center"> 
         <div id="header">
+            <!-- <input type="text" v-model="input" placeholder="change me"/> -->
+            <a v-for='(bookmarkItem, object) in bookmarkList' v-bind:value="bookmarkItem.name" style="display:block;" @click="bookmark(bookmarkItem)">{{bookmarkItem.name}}</a>
             <p>
-             The selected word is: <span id="headword"></span>
+             The selected word is: {{selectedText}}
             </p>    
         </div>
         <div>
-            <button class="ms-Button ms-Button--primary" id="bookmark-button">
-                <span class="ms-Button-icon"><i class="ms-Icon ms-Icon--plus"></i></span>
-                <span class="ms-Button-label" id="button-text"></span>
-                <span class="ms-Button-description" id="button-desc"></span>
-            </button>
+            <button class="ms-Button ms-Button--primary" id="bookmark-button" @click="bookmark('wrong')">Bookmark it baby</button>
             <!-- <p>Insert a comment at the selection</p>
             <button class="ms-Button" id="insertContentControls">Insert comment</button>
             <p>Create a header</p>

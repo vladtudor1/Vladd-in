@@ -72,7 +72,7 @@
 //<script src="../../Scripts/openxmlsdkjs-01-01-02/openxml.js"></script>
 //
 
-var officeWordExtension = (function () {
+var officeWordExtension = (function bookmark() {
     "use strict";
 
     var officeWordExtension = {
