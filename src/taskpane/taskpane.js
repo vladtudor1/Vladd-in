@@ -11,6 +11,7 @@ const app = new Vue({
   el: '#app',
   data: {
     document: {},
+    ooxml: 'Document OOXML',
     bookmarkList: [
       {
         id: 0,
@@ -26,8 +27,18 @@ const app = new Vue({
         id: 2,
         name: "Inleiding",
         isSelected: false
+      },
+      {
+        id: 2,
+        name: "Begroting",
+        isSelected: false
       }
     ]
+  },
+  computed: {
+    ooxmlBody: function() {
+      return this.ooxml.substring(this.ooxml.indexOf('<w:body>'), this.ooxml.indexOf('</w:body>'))
+    }
   },
   mounted: function () {
     var _this = this;
@@ -36,23 +47,37 @@ const app = new Vue({
       _this.document = Office.context.document;
       _this.tryUpdatingSelectedWord();
       _this.document.addHandlerAsync("documentSelectionChanged", _this.tryUpdatingSelectedWord);
+      _this.updateOOXML();
     }
   },
   methods: {
-    alert: function () {
-      console.log("don't touch me")
-    },
+    // selectFunctions: function(checkboxElem){
+    //   if (checkboxElem.checked){
+    //     this.bookmark();
+    //   } else {
+    //     this.deleteBookmark();
+    //   }
+    // },
     tryUpdatingSelectedWord: function () {
       this.document.getSelectedDataAsync(Office.CoercionType.Text, this.selectedTextCallback);
     },
     selectedTextCallback: function (selectedText) {
       this.selectedText = $.trim(selectedText.value);
     },
-    bookmark: function (bookmarkItem) {
+    updateOOXML: function() {
       var _this = this;
+      Word.run(async function (ctx) {
+        var docOoxml = ctx.document.body.getOoxml();
+        return ctx.sync().then( function() {
+          _this.ooxml = docOoxml.value
+        });
+      })
+    },
+    insertBookmark: function (bookmarkItem) {
+      var _this = this;
+      console.log('init')
       console.log('bookmarking '+bookmarkItem.name+' lol')
-      this.bookmarklist[bookmarkItem] = 
-      Word.run(function (context) {
+      Word.run(async function (context) {
         console.log(context)
         // Create a bookmark ID - 0 works just fine as Word will generate a new number upon insert which is awesome!
         var bkmkId = 0;
@@ -70,10 +95,28 @@ const app = new Vue({
         // extension for an idea of the current suggested API for Microsoft.  I only wrote a quick insertBookmark
         // method that doesn't quite fit the signature for what's proposed btw.  I wanted this to be quick and
         // minimal.  Plus, the extension should really extend range, document.body, etc.
-        _this.insertBookmark(bkmkId, bkmkName, _this.handleSuccess, _this.errorHandler);
+        _this.insertOOXMLBookmark(bkmkId, bkmkName, _this.handleSuccess, _this.errorHandler);
+      });
+      this.updateOOXML()
+    },
+    findBookmark: function(bookmarkItem) {
+      Word.run(async function (context) {
+        console.log(context.document.getBookmarkRange('_TOC_MANUAL_'+bookmarkItem.name).getOoxml())
+        await context.sync();
       });
     },
-    insertBookmark:function (bkmkId, bkmkName, handleSuccess, handleError) {
+    deleteBookmark: function (bookmarkItem) {
+      var W = openXml.W;
+      var XElement = Ltxml.XElement;
+      Word.run(async function(context){
+        //Define the range and OOXML of the selection 
+        console.log("deleting bookmark" + bookmarkItem.name)
+        context.document.deleteBookmark('_TOC_MANUAL_'+bookmarkItem.name)
+        return context.sync();
+      });
+      this.updateOOXML()
+    },
+    insertOOXMLBookmark:function (bkmkId, bkmkName, handleSuccess, handleError) {
       var _this = this;
       // OpenXml...
       var XAttribute = Ltxml.XAttribute;
@@ -89,7 +132,6 @@ const app = new Vue({
           return ctx.sync().then(function () {
               // now we can use the ooxml var
               // open the full OPC package we get in the openXml SDK
-              console.log('1')
               var doc = new openXml.OpenXmlPackage(ooxml.value);
 
               // Create the bookmarkStart/End elements.
@@ -99,7 +141,6 @@ const app = new Vue({
               var bookmarkStart = new XElement("w:bookmarkStart",
                   new XAttribute("w:id", bkmkId),
                   new XAttribute("w:name", bkmkName));
-                  console.log('2')
               var bookmarkEnd = new XElement("w:bookmarkEnd",
                   new XAttribute("w:id", bkmkId));
 
@@ -113,7 +154,6 @@ const app = new Vue({
               // in mind in that you always get valid Opc (despite the name of the method).
 
               // TODO: research if I should use .elements() instead of .descendantNodes()?
-              console.log('3')
               // Find first paragraph and add the bookmarkStart - the selection is wrapped in a paragraph
               var body = mainPartXDoc.root.element(W.body);
               var functorPMatch = function (e) {
@@ -127,7 +167,6 @@ const app = new Vue({
                   console.log("Word-extensions.js: This should never happen; we don't have a paragraph in the selection.")
               }
               else {
-                  console.log("else1")
                   // Insert the bookmark start here.
                   nodeFirstP.addFirst(bookmarkStart);
 
@@ -138,13 +177,11 @@ const app = new Vue({
                       // No paragraphs
                   }
                   else {
-                      console.log("else2")
                       // Now locate the last paragraph and insert our end after the end of it.
                       var count = nodeLastP.descendantNodes().count();
                       if (0 == count) {
                           nodeLastP.addFirst(bookmarkEnd);
                       } else {
-                          console.log("else3")
                           var node = nodeLastP.getLastNode();
 
                           // WORD BUG - Anchor Bookmarks - 
@@ -190,10 +227,7 @@ const app = new Vue({
               // be retained.
               range.insertOoxml(doc.saveToFlatOpc(), Word.InsertLocation.replace);
 
-              return ctx.sync().then(function () {
-                  console.log('Word-extensions.js: Bookmark inserted {name: "' + bkmkName + '" id: "' + bkmkId + '"}');
-              });
-          })
+              return ctx.sync()
           // Synchronize the document state by executing the queued commands.
           .then(ctx.sync)
           .then(function () {
@@ -202,8 +236,9 @@ const app = new Vue({
           .catch(function (error) {
             handleError(error);
           });
+        });
       });
-  },
+    },
     //$$(Helper function for treating errors, $loc_script_taskpane_home_js_comment34$)$$
     errorHandler: function (error) {
       // $$(Always be sure to catch any accumulated errors that bubble up from the Word.run execution., $loc_script_taskpane_home_js_comment35$)$$
@@ -214,7 +249,6 @@ const app = new Vue({
       }
     },
     handleSuccess: function() {
-      console.log('owww yesss')
     },
     // Helper function for displaying notifications
     showNotification: function (header, content) {
@@ -230,67 +264,6 @@ const app = new Vue({
       //           + " Please select some of your document and click [Get OOXML] first!";
       // messageBanner.showBanner();
       // messageBanner.toggleExpansion();
-    }
+    },
   }
 })
-
-
-// (function bookmark () {
-//   "use strict";
-
-//   function placeBookmark() {
-
-//       Word.run(function (context) {
-
-//           // Create a bookmark ID - 0 works just fine as Word will generate a new number upon insert which is awesome!
-//           var bkmkId = 0;
-
-//           // Create a bookmark Name - it must be unique or it will overwrite a current one!
-//           // It must be no longer than 40 characters!
-//           // Please see the behavior here:
-//           var bkmkName = "_TOC_MANUAL_" + new Date().getTime();
-
-//           // Queue a command to get the current selection and then
-//           // create a proxy range object with the results.
-//           var range = context.document.getSelection();
-
-//           // Use the extension to insert the bookmark.  It really should be this easy.  See the header of the
-//           // extension for an idea of the current suggested API for Microsoft.  I only wrote a quick insertBookmark
-//           // method that doesn't quite fit the signature for what's proposed btw.  I wanted this to be quick and
-//           // minimal.  Plus, the extension should really extend range, document.body, etc.
-//           officeWordExtension.insertBookmark(bkmkId, bkmkName, handleSuccess, errorHandler);
-//       });
-//   }
-
-//   function handleSuccess() {
-//       showNotification("Success:", "It worked, use Word to check for your bookmark!");
-//   }
-
-//   //$$(Helper function for treating errors, $loc_script_taskpane_home_js_comment34$)$$
-//   function errorHandler(error) {
-//       // $$(Always be sure to catch any accumulated errors that bubble up from the Word.run execution., $loc_script_taskpane_home_js_comment35$)$$
-//       showNotification("Error:", error);
-//       console.log("Error: " + error);
-//       if (error instanceof OfficeExtension.Error) {
-//           console.log("Debug info: " + JSON.stringify(error.debugInfo));
-//       }
-//   }
-
-//   // Helper function for displaying notifications
-//   function showNotification(header, content) {
-
-//       var report = document.getElementById("status");
-//        while (report.hasChildNodes()) {
-//       report.removeChild(report.lastChild);
-//        }
-
-//       $("#notificationHeader").text(header);
-//       $("#notificationBody").text(content);
-//       report.innerText = "Congrats, your bookmark has been inserted!" 
-// //           + " Please select some of your document and click [Get OOXML] first!";
-//       // messageBanner.showBanner();
-//       // messageBanner.toggleExpansion();
-//   }
-// })();
-
-
