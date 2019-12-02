@@ -41,8 +41,7 @@
 </head>
 
 <body class="ms-font-m ms-welcome ms-Fabric">
-        <h3 class="ms-font-su">Vladd-in</h1>
-    </header>
+        <h3 class="ms-font-su">Vladd-in</h3>
     <main id="app-body" class="ms-welcome__main" style="display: none;">
         <div id='message'></div>
     </main>
@@ -50,8 +49,13 @@
         <div id="header">
             <div v-for='(bookmarkItem, object) in bookmarkList' :key="bookmarkItem.id">
                     <h3>{{bookmarkItem.name}}
-                    <i class="fa fa-check" @click="insertBookmark(bookmarkItem)"></i>
-                    <i class="fa fa-trash" @click="deleteBookmark(bookmarkItem)"></i></h3>
+                    <div v-if="!bookmarkItem.isSelected">
+                    <i class="fa fa-check" @click="insertBookmark(bookmarkItem); setCheck(bookmarkItem)"></i>
+                    </div>
+                    <div v-if="bookmarkItem.isSelected">
+                    <i class="fa fa-trash" @click="deleteBookmark(bookmarkItem); unsetCheck(bookmarkItem)"></i>
+                    </div>
+                    </h3>
             </div>
             <p>
              <!-- The selected word is: {{selectedText}} -->

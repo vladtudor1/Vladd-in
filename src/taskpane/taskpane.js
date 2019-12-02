@@ -29,7 +29,7 @@ const app = new Vue({
         isSelected: false
       },
       {
-        id: 2,
+        id: 3,
         name: "Begroting",
         isSelected: false
       }
@@ -51,13 +51,12 @@ const app = new Vue({
     }
   },
   methods: {
-    // selectFunctions: function(checkboxElem){
-    //   if (checkboxElem.checked){
-    //     this.bookmark();
-    //   } else {
-    //     this.deleteBookmark();
-    //   }
-    // },
+    setCheck: function(bookmarkItem){
+      bookmarkItem.isSelected = true
+    },
+    unsetCheck: function(bookmarkItem){
+      bookmarkItem.isSelected = false
+    },
     tryUpdatingSelectedWord: function () {
       this.document.getSelectedDataAsync(Office.CoercionType.Text, this.selectedTextCallback);
     },
@@ -110,7 +109,7 @@ const app = new Vue({
       var XElement = Ltxml.XElement;
       Word.run(async function(context){
         //Define the range and OOXML of the selection 
-        console.log("deleting bookmark" + bookmarkItem.name)
+        console.log("Deleting bookmark " + bookmarkItem.name)
         context.document.deleteBookmark('_TOC_MANUAL_'+bookmarkItem.name)
         return context.sync();
       });
