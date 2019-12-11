@@ -49,29 +49,28 @@
         <div id="header">
             <div v-for='(bookmarkItem, object) in bookmarkList' :key="bookmarkItem.id">
                     <h3>{{bookmarkItem.name}}
-                    <div v-if="!bookmarkItem.isSelected">
-                    <i class="fa fa-check" @click="insertBookmark(bookmarkItem); setCheck(bookmarkItem)"></i>
+                    <!-- <div v-if="!bookmarkItem.isSelected"> -->
+                        <div>
+                    <i class="fa fa-check checkmark" @click="findBookmark(bookmarkItem); setCheck(bookmarkItem)"></i>
                     </div>
-                    <div v-if="bookmarkItem.isSelected">
-                    <i class="fa fa-trash" @click="deleteBookmark(bookmarkItem); unsetCheck(bookmarkItem)"></i>
+                    <!-- <div v-if="bookmarkItem.isSelected"> -->
+                        <div>
+                    <i class="fa fa-trash trashbin" @click="deleteBookmark(bookmarkItem); unsetCheck(bookmarkItem)"></i>
                     </div>
                     </h3>
             </div>
             <p>
-             <!-- The selected word is: {{selectedText}} -->
             </p>    
         </div>
         <div>
             <p>OOXML Stuff</p>
             <div id="ooxmlContent">
-                <!-- <button class="ms-Button" id="getOOXML">Get Open XML</button>
-                <button class="ms-Button" id="setOOXML">Insert Open XML</button>              -->
                 <div id="status"></div>
                 <p style="width: 250px; height: 500px;" disabled="disabled">{{ooxmlBody}}</p>
             </div>
-            <p style="margin-top: 50px;">
+            <!-- <p style="margin-top: 50px;">
                 <a href="javascript:location.reload(true)">Refresh add-in</a>
-            </p>
+            </p> -->
         </div>
     </div>
 </body>

@@ -90,3 +90,13 @@ b {
     font-family: Segoe UI Semibold;
     color: #262626;
 }
+
+i.checkmark
+{
+    cursor: pointer;
+}
+
+i.trashbin
+{
+    cursor: pointer;
+}
