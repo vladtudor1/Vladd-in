@@ -51,12 +51,6 @@ const app = new Vue({
     }
   },
   methods: {
-    setCheck: function(bookmarkItem){
-      bookmarkItem.isSelected = true
-    },
-    unsetCheck: function(bookmarkItem){
-      bookmarkItem.isSelected = false
-    },
     tryUpdatingSelectedWord: function () {
       this.document.getSelectedDataAsync(Office.CoercionType.Text, this.selectedTextCallback);
     },
@@ -74,8 +68,11 @@ const app = new Vue({
     },
     insertBookmark: function (bookmarkItem) {
       var _this = this;
+      var bookmarkList = _this.bookmarkList;
       console.log('init')
       console.log('bookmarking '+ bookmarkItem.name +' lol')
+      bookmarkItem.isSelected = true;
+      console.log(bookmarkList)
       Word.run(async function (context) {
         // console.log(context)
         // Create a bookmark ID - 0 works just fine as Word will generate a new number upon insert which is awesome!
@@ -90,87 +87,49 @@ const app = new Vue({
         // create a proxy range object with the results.
         var range = context.document.getSelection();
 
-        // return context.sync().then(async function() {
-        //  var selectedText = Office.context.document.getSelectedDataAsync(Office.CoercionType.ooxml)
-        //   return context.sync().then(function() {
-        //     console.log(selectedText.value)
-        //   if(typeof(range) === 'undefined'){
-        //     console.log("Fresh bookmark")
-        //     _this.insertOOXMLBookmark(bkmkId, bkmkName, _this.handleSuccess, _this.errorHandler);
-        //   } else {
-        //     console.log("Existing bookmark")
-        //     context.document.deleteBookmark(bkmkName);
-        //     _this.insertOOXMLBookmark(bkmkId, bkmkName, _this.handleSuccess, _this.errorHandler);
-        //   }
-        //   return context.sync()
-        // })
-        // .then(context.sync)
-
-        // Use the extension to insert the bookmark.  It really should be this easy.  See the header of the
-        // extension for an idea of the current suggested API for Microsoft.  I only wrote a quick insertBookmark
-        // method that doesn't quite fit the signature for what's proposed btw.  I wanted this to be quick and
-        // minimal.  Plus, the extension should really extend range, document.body, etc.
         _this.insertOOXMLBookmark(bkmkId, bkmkName, _this.handleSuccess, _this.errorHandler);
       });
       this.updateOOXML()
     },
-    findBookmark: function(bookmarkItem) {
-
-      Office.context.document.getSelectedDataAsync("ooxml", function (asyncResult) {
-        if (asyncResult.status == Office.AsyncResultStatus.Failed) {
-            console.log('Action failed. Error: ' + asyncResult.error.message);
-        }
-        else {
-            console.log('Selected data: ' + asyncResult.value);
-        }
-      })
-      // Word.run(function (context) {
-
-      //   var range = context.document.getSelection().paragraphs.getFirstOrNullObject()
-      //   var rangeOOXML = range.getOoxml();
-      //   return context.sync().then(function () {
-      //     rangeString = rangeOOXML.value
-      //     var rangeString = rangeOOXML.substring("<w:bookmarkStart>", "</w:bookmarkEnd>")
-      //     console.log(rangeString);
-      //   })
-      // })
-      this.updateOOXML();
-    },
     initFindOOXML: function(){
 
-      var foundBookmarks = [];
       var _this = this;
       Word.run( function(context){
 
-        var options = Word.SearchOptions.newObject(context);
-        options.matchWildcards = true;
+        // var options = Word.SearchOptions.newObject(context);
+        // options.matchWildcards = true;
         
         var documentOoxml = context.document.body.getOoxml();
 
-        // context.trackedObjects.add(documentOoxml);
-
         return context.sync().then(function(){
        
+        // Check in the document what bookmarks are inserted and also 
+        // get the text within the bookmarking clause
         var ooxml = documentOoxml.value;
         for (var bookmark in _this.bookmarkList) {
           var bookmarkName = '_TOC_MANUAL_'+_this.bookmarkList[bookmark].name
           var present = ooxml.indexOf('w:name="'+bookmarkName)
           console.log(present)
           if (present !== -1) {
+            _this.bookmarkList[bookmark].isSelected = true;
             console.log(bookmarkName + ' was found')
             var BookmarkObj = context.document.getBookmarkRangeOrNullObject(bookmarkName)
             var BookmarkRange = BookmarkObj.load();
-            return context.sync().then(function() {
-              console.log(BookmarkRange.text)
-            })
+            // return context.sync().then(function() {
+            //   console.log(BookmarkRange.text)
+            // })
           }
         }
+        console.log(_this.bookmarkList)
           return context.sync();
         })
-      }).then(function(){
       })
     },
     deleteBookmark: function (bookmarkItem) {
+      var _this = this;
+      var bookmarkList = _this.bookmarkList;
+      bookmarkItem.isSelected = false;
+      console.log(bookmarkList);
       Word.run(async function(context){
         //Define the range and OOXML of the selection 
         console.log("Deleting bookmark " + bookmarkItem.name)
