@@ -48,14 +48,16 @@
     <div id="app" style="text-align: center"> 
         <div id="header">
             <div v-for='(bookmarkItem, object) in bookmarkList' :key="bookmarkItem.id">
-                    <h3>{{bookmarkItem.name}}
-                    <!-- <div v-if="!bookmarkItem.isSelected"> -->
+                    <h3><i class="bookmarkListItem" @click="highlightSelection(bookmarkItem)"> {{bookmarkItem.name}} </i>
+                    <div v-if="!bookmarkItem.isSelected">
                         <div>
                     <i class="fa fa-check checkmark" @click="insertBookmark(bookmarkItem); setCheck(bookmarkItem)"></i>
                     </div>
-                    <!-- <div v-if="bookmarkItem.isSelected"> -->
+                    </div>
+                    <div v-if="bookmarkItem.isSelected">
                         <div>
                     <i class="fa fa-trash trashbin" @click="deleteBookmark(bookmarkItem); unsetCheck(bookmarkItem)"></i>
+                    </div>
                     </div>
                     </h3>
             </div>

@@ -100,3 +100,8 @@ i.trashbin
 {
     cursor: pointer;
 }
+
+i.bookmarkListItem
+{
+    cursor: pointer;
+}

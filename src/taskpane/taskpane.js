@@ -51,6 +51,12 @@ const app = new Vue({
     }
   },
   methods: {
+    setCheck: function(bookmarkItem){
+      bookmarkItem.isSelected = true;
+    },
+    unsetCheck: function(bookmarkItem){
+      bookmarkItem.isSelected = false;
+    },
     tryUpdatingSelectedWord: function () {
       this.document.getSelectedDataAsync(Office.CoercionType.Text, this.selectedTextCallback);
     },
@@ -65,6 +71,38 @@ const app = new Vue({
           _this.ooxml = docOoxml.value
         });
       })
+    },
+    highlightSelection: function (bookmarkItem){
+
+      console.log(bookmarkItem.name)
+
+      Word.run( function(context){
+        
+        var documentOoxml = context.document.body.getOoxml();
+        var body = context.document.body
+        body.load("font")
+
+        return context.sync().then(function(){
+
+        var ooxml = documentOoxml.value;
+        var bookmarkName = '_TOC_MANUAL_'+bookmarkItem.name
+        var present = ooxml.indexOf('w:name="'+bookmarkName)
+
+          if (present !== -1){
+
+            var bookmarkObject = context.document.getBookmarkRangeOrNullObject(bookmarkName)
+            var bookmarkRange = bookmarkObject.load();
+            bookmarkRange.select('start')
+            bookmarkRange.font.highlightColor = "#FFFF00";
+            return context.sync().then(function(){
+              console.log(bookmarkRange.text)
+            })
+          } else {
+            console.log("Nothing was found")
+          }
+        })
+      })
+
     },
     insertBookmark: function (bookmarkItem) {
       var _this = this;
@@ -113,14 +151,11 @@ const app = new Vue({
           if (present !== -1) {
             _this.bookmarkList[bookmark].isSelected = true;
             console.log(bookmarkName + ' was found')
-            var BookmarkObj = context.document.getBookmarkRangeOrNullObject(bookmarkName)
-            var BookmarkRange = BookmarkObj.load();
-            // return context.sync().then(function() {
-            //   console.log(BookmarkRange.text)
-            // })
+          } else {
+            console.log("Nothing was found")
           }
         }
-        console.log(_this.bookmarkList)
+          console.log(_this.bookmarkList)
           return context.sync();
         })
       })
