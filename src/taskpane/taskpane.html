@@ -46,24 +46,31 @@
         <div id='message'></div>
     </main>
     <div id="app" style="text-align: center"> 
+        <div id="warning">
+        </div>
         <div id="header">
-            <div v-for='(bookmarkItem, object) in bookmarkList' :key="bookmarkItem.id">
-                    <h3>
-                    <i class="bookmarkListItem" @click="switchHighlight(bookmarkItem)"> {{bookmarkItem.name}} </i>
+            <div v-for='(bookmarkItem, index) in bookmarkList' :key="bookmarkItem.id">
+                <h3>
+                    <a href="#" style="color:inherit; text-decoration:none;" @click="highlightSelection(bookmarkItem)"><i class="bookmarkListItem" ></i> {{bookmarkItem.name}} </a>
+                     <span v-if="(bookmarkItem.isSelected && bookmarkItem.outOfOrder) || !bookmarkItem.isSelected" title="Bookmark appears before the order in which it is expected, or it is not selected at all."><i style="color:red"  class="fa fa-warning"></i></span>
                     <div v-if="!bookmarkItem.isSelected">
                         <div>
-                    <i class="fa fa-check checkmark" @click="insertBookmark(bookmarkItem); setCheck(bookmarkItem)"></i>
-                    </div>
+                            <i class="fa fa-check checkmark" @click="insertBookmark(bookmarkItem)"></i>
+                        </div>
                     </div>
                     <div v-if="bookmarkItem.isSelected">
                         <div>
-                    <i class="fa fa-trash trashbin" @click="deleteBookmark(bookmarkItem); unsetCheck(bookmarkItem)"></i>
+                            <i class="fa fa-trash trashbin" @click="deleteBookmark(index)"></i>
+                        </div>
                     </div>
-                    </div>
-                    </h3>
+                </h3>
             </div>
             <p>
             </p>    
+        </div>
+        <div>
+            <button @click="initFindOOXML()">Order check</button>
+            <button @click="dumpState()">Dump state</button>
         </div>
         <div>
             <p>OOXML Stuff</p>

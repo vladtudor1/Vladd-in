@@ -17,35 +17,40 @@ const app = new Vue({
         doc_order: 1,
         position: null,
         name: "Voorwoord",
-        isSelected: false
+        isSelected: false,
+        outOfOrder:false
       },
       {
         id: 1,
         doc_order: 2,
         position: null,
         name: "Samenvatting",
-        isSelected: false
+        isSelected: false,
+        outOfOrder:false
       },
       {
         id: 2,
         doc_order: 3,
         position: null,
         name: "Inleiding",
-        isSelected: false
+        isSelected: false,
+        outOfOrder:false
       },
       {
         id: 3,
         doc_order: 4,
         position: null,
         name: "Begroting",
-        isSelected: false
+        isSelected: false,
+        outOfOrder:false
       }
     ]
   },
   computed: {
     ooxmlBody: function() {
-      return this.ooxml.substring(this.ooxml.indexOf('<w:body>'), this.ooxml.indexOf('</w:body>'))
-    }
+      return this.ooxml.substring(this.ooxml.indexOf('<w:body'), this.ooxml.indexOf('</w:body'))
+      // return this.ooxml.substring(this.ooxml.indexOf('<w:'+element), this.ooxml.indexOf('</w:'+element))
+    },
   },
   mounted: function () {
     var _this = this;
@@ -58,22 +63,24 @@ const app = new Vue({
       _this.updateOOXML();
     }
   },
+  updated: function() {
+    this.initFindOOXML();  
+    var _this = this;
+    var maxPos = 0
+    $.each(this.bookmarkList, function(key, value)  {
+        if (value.position < maxPos) {
+          _this.bookmarkList[key].outOfOrder = true;
+        }
+        else {
+          _this.bookmarkList[key].outOfOrder = false;
+          maxPos = Math.max(maxPos, _this.bookmarkList[key].position)
+          console.log('data is updated ' + maxPos)
+        }
+    });
+  },
   methods: {
-    setCheck: function(bookmarkItem){
-      bookmarkItem.isSelected = true;
-    },
-    unsetCheck: function(bookmarkItem){
-      bookmarkItem.isSelected = false;
-    },
-    switchHighlight: function(bookmarkItem){
-      var clicked = true; 
-      if(clicked){
-      this.highlightSelection(bookmarkItem);
-      clicked = false;
-      } else {
-      this.unhighlight();
-      clicked = true;
-      }
+    dumpState: function() {
+      console.log(this._data.bookmarkList)
     },
     tryUpdatingSelectedWord: function () {
       this.document.getSelectedDataAsync(Office.CoercionType.Text, this.selectedTextCallback);
@@ -97,8 +104,6 @@ const app = new Vue({
       Word.run( function(context){
         
         var documentOoxml = context.document.body.getOoxml();
-        var body = context.document.body
-        body.load("font")
 
         return context.sync().then(function(){
 
@@ -110,32 +115,21 @@ const app = new Vue({
 
             var bookmarkObject = context.document.getBookmarkRangeOrNullObject(bookmarkName)
             var bookmarkRange = bookmarkObject.load();
-            
-            // First remove all existing highlights from the document
-            body.font.highlightColor = null;
 
             // Then add the highlight to the selected bookmark range
-            bookmarkRange.select('start')
-            bookmarkRange.font.highlightColor = "#FFFF00";
+            bookmarkRange.select('select')
             return context.sync().then(function(){
-              console.log(bookmarkRange.text)
+              // console.log(bookmarkRange.text)
             })
           } else {
             console.log("Nothing was found")
-            body.font.highlightColor = null;
+            var range = context.document.getSelection();
+            range.select('start');
+            return context.sync();
           }
         })
       })
 
-    },
-    unhighlight: function(){
-      Word.run( function(context){
-        var body = context.document.body
-        body.load("font")
-        return context.sync().then(function(){
-            body.font.highlightColor = null;
-        })
-      })
     },
     insertBookmark: function (bookmarkItem) {
       var _this = this;
@@ -168,9 +162,6 @@ const app = new Vue({
       var presentList = [];
 
       Word.run( function(context){
-
-        // var options = Word.SearchOptions.newObject(context);
-        // options.matchWildcards = true;
         
         var documentOoxml = context.document.body.getOoxml();
 
@@ -183,8 +174,7 @@ const app = new Vue({
           var bookmarkName = '_TOC_MANUAL_'+_this.bookmarkList[bookmark].name
           var present = ooxml.indexOf('w:name="'+bookmarkName)
           presentList.push(present);
-          console.log(presentList)
-          console.log(present)
+          console.log("Position: " + present)
           if (present !== -1) {
             _this.bookmarkList[bookmark].isSelected = true;
             _this.bookmarkList[bookmark].position = present;
@@ -195,24 +185,26 @@ const app = new Vue({
           }
         }
 
-        for (var i = 1, len = presentList.length; i < len; i++){
-          if (presentList[i] < presentList[i - 1] || present == -1) {
-            console.log("The order is not correct and/or bookmarks are missing")
-            break;
-          } else {
-            console.log("The order is correct")
-          }
-        }
+        console.log(presentList)
+
+        // for (var i = 1, len = presentList.length; i < len; i++){
+        //   if (presentList[i] < presentList[i - 1] || present == -1) {
+        //     console.log("The order is not correct and/or bookmarks are missing")
+        //     $('#warning').append('The bookmark order is not correct and/or bookmarks are missing.')
+        //     break;
+        //   } else {
+        //     console.log("The order is correct")
+        //   }
+        // }
           console.log(_this.bookmarkList)
           return context.sync();
         })
       })
     },
-    deleteBookmark: function (bookmarkItem) {
-      var _this = this;
-      var bookmarkList = _this.bookmarkList;
-      bookmarkItem.isSelected = false;
-      console.log(bookmarkList);
+    deleteBookmark: function (index) {
+      var bookmarkItem = this.bookmarkList[index];
+      this.bookmarkList[index].position == -1;
+      this.bookmarkList[index].isSelected = false;
       Word.run(async function(context){
         console.log("Deleting bookmark " + bookmarkItem.name)
         context.document.deleteBookmark('_TOC_MANUAL_'+ bookmarkItem.name)
@@ -221,7 +213,6 @@ const app = new Vue({
       this.updateOOXML()
     },
     insertOOXMLBookmark:function (bkmkId, bkmkName, handleSuccess, handleError) {
-      var _this = this;
       // OpenXml...
       var XAttribute = Ltxml.XAttribute;
       var XElement = Ltxml.XElement;
