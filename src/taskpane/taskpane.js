@@ -11,6 +11,7 @@ const app = new Vue({
   data: {
     document: {},
     ooxml: 'Document OOXML',
+    xmlObj: {},
     bookmarkList: [
       {
         id: 0,
@@ -48,7 +49,7 @@ const app = new Vue({
   },
   computed: {
     ooxmlBody: function() {
-      return this.ooxml.substring(this.ooxml.indexOf('<w:body'), this.ooxml.indexOf('</w:body'))
+      return this.ooxml.substring(this.ooxml.indexOf('<w:document'), this.ooxml.indexOf('</w:document'))
       // return this.ooxml.substring(this.ooxml.indexOf('<w:'+element), this.ooxml.indexOf('</w:'+element))
     },
   },
@@ -57,38 +58,48 @@ const app = new Vue({
     Office.initialize = function (reason) {
       OfficeExtension.config.extendedErrorLogging = true;
       _this.document = Office.context.document;
-      _this.tryUpdatingSelectedWord();
-      _this.document.addHandlerAsync("documentSelectionChanged", _this.tryUpdatingSelectedWord);
-      _this.initFindOOXML();
-      _this.updateOOXML();
+      _this.syncOOXML();
+      _this.document.addHandlerAsync("documentSelectionChanged", _this.syncOOXML);
     }
   },
   updated: function() {
-    this.initFindOOXML();  
     var _this = this;
     var maxPos = 0
+    var parser = new DOMParser();
+    var xmlDoc = parser.parseFromString(_this.ooxml,"text/xml");
+
     $.each(this.bookmarkList, function(key, value)  {
+        // try to find bookmark
+        var position = _this.ooxml.indexOf('_TOC_MANUAL_'+value.name) 
+        // todo 1: zoeken met een Xpath in de XMLdoc
+        // //bookmarkStart[@w:name='_TOC_MANUAL_'+value.name]
+        _this.bookmarkList[key].position = position;
+        // todo 2: sla in het bookmarkList VueJS object het absolute Xpath pad op als xpathObj['start']
+        //      /w:document[1]/w:body[1]/w:p[xx]/w:r[xx]
+        if (position !== -1) {
+          //bookmark is found
+          _this.bookmarkList[key].isSelected = true;
+        }
+        // if bookmark is not in OOXML:
+        else {
+          _this.bookmarkList[key].isSelected = false;
+        }
         if (value.position < maxPos) {
           _this.bookmarkList[key].outOfOrder = true;
         }
         else {
           _this.bookmarkList[key].outOfOrder = false;
           maxPos = Math.max(maxPos, _this.bookmarkList[key].position)
-          console.log('data is updated ' + maxPos)
         }
     });
+
+    console.log(xmlDoc)
   },
   methods: {
     dumpState: function() {
       console.log(this._data.bookmarkList)
     },
-    tryUpdatingSelectedWord: function () {
-      this.document.getSelectedDataAsync(Office.CoercionType.Text, this.selectedTextCallback);
-    },
-    selectedTextCallback: function (selectedText) {
-      this.selectedText = $.trim(selectedText.value);
-    },
-    updateOOXML: function() {
+    syncOOXML: function () {
       var _this = this;
       Word.run(async function (ctx) {
         var docOoxml = ctx.document.body.getOoxml();
@@ -119,7 +130,6 @@ const app = new Vue({
             // Then add the highlight to the selected bookmark range
             bookmarkRange.select('select')
             return context.sync().then(function(){
-              // console.log(bookmarkRange.text)
             })
           } else {
             console.log("Nothing was found")
@@ -154,63 +164,18 @@ const app = new Vue({
 
         _this.insertOOXMLBookmark(bkmkId, bkmkName, _this.handleSuccess, _this.errorHandler);
       });
-      this.updateOOXML()
+      this.syncOOXML()
     },
-    initFindOOXML: function(){
-
-      var _this = this;
-      var presentList = [];
-
-      Word.run( function(context){
-        
-        var documentOoxml = context.document.body.getOoxml();
-
-        return context.sync().then(function(){
-       
-        // Check in the document what bookmarks are inserted and also 
-        // get the text within the bookmarking clause
-        var ooxml = documentOoxml.value;
-        for (var bookmark in _this.bookmarkList) {
-          var bookmarkName = '_TOC_MANUAL_'+_this.bookmarkList[bookmark].name
-          var present = ooxml.indexOf('w:name="'+bookmarkName)
-          presentList.push(present);
-          console.log("Position: " + present)
-          if (present !== -1) {
-            _this.bookmarkList[bookmark].isSelected = true;
-            _this.bookmarkList[bookmark].position = present;
-            console.log(bookmarkName + ' was found')
-            console.log(_this.bookmarkList[bookmark].doc_order)
-          } else {
-            console.log("Nothing was found")
-          }
-        }
-
-        console.log(presentList)
-
-        // for (var i = 1, len = presentList.length; i < len; i++){
-        //   if (presentList[i] < presentList[i - 1] || present == -1) {
-        //     console.log("The order is not correct and/or bookmarks are missing")
-        //     $('#warning').append('The bookmark order is not correct and/or bookmarks are missing.')
-        //     break;
-        //   } else {
-        //     console.log("The order is correct")
-        //   }
-        // }
-          console.log(_this.bookmarkList)
-          return context.sync();
-        })
-      })
-    },
+    
     deleteBookmark: function (index) {
       var bookmarkItem = this.bookmarkList[index];
-      this.bookmarkList[index].position == -1;
-      this.bookmarkList[index].isSelected = false;
+
       Word.run(async function(context){
         console.log("Deleting bookmark " + bookmarkItem.name)
         context.document.deleteBookmark('_TOC_MANUAL_'+ bookmarkItem.name)
         return context.sync();
       });
-      this.updateOOXML()
+      this.syncOOXML()
     },
     insertOOXMLBookmark:function (bkmkId, bkmkName, handleSuccess, handleError) {
       // OpenXml...
